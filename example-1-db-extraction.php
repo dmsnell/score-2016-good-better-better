@@ -1,9 +1,9 @@
 <?php
 
 function wcorl_grab_splines() {
-  $db_splines = wcorl_grab_splines_from_db();
+  list( $db_splines, $db_error ) = wcorl_grab_splines_from_db();
 
-  if ( $db_splines === false ) {
+  if ( $db_error === false ) {
     return false;
   }
 
@@ -44,8 +44,8 @@ function wcorl_grab_splines_from_db() {
 
   if ( ! $spline_count ) {
     error_log( 'Error fetching splines' );
-    return false;
+    return array( array(), false );
   }
 
-  return $wpdb->get_results();
+  return array( $wpdb->get_results(), true );
 }
