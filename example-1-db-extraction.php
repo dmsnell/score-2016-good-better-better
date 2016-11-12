@@ -1,6 +1,22 @@
 <?php
 
 function wcorl_grab_splines() {
+  list(
+      $splines,
+      $had_error,
+      $tracks
+  ) = wcorl_grab_splines_raw();
+
+  if ( $had_error ) {
+    return false;
+  }
+
+  array_walk( $tracks, 'wcorl_track' );
+
+  return $splines;
+}
+
+function wcorl_grab_splines_raw() {
   list( $db_splines, $db_error ) = wcorl_grab_splines_from_db();
 
   if ( $db_error === false ) {
@@ -8,7 +24,7 @@ function wcorl_grab_splines() {
   }
 
   $now = time();
-  
+
   list( $valid_splines, $expired_splines ) = array_partition(
     $db_splines,
     function( $spline ) {
@@ -16,25 +32,32 @@ function wcorl_grab_splines() {
     }
   );
 
-  foreach( $expired_splines as $spline ) {
-    wcorl_track( array(
-       'name' => 'foundExpiredSpline',
-       'splineId' => $spline[ 'id' ],
-       'foundOn' => $now
-    ) );
-  }
+  $expired_tracks = array_map( function( $spline ) use ( $now ) {
+    return array(
+      'name' => 'foundExpiredSpline',
+      'splineId' => $spline[ 'id' ],
+      'foundOn' => $now
+    );
+  }, $expired_splines );
 
-  wcorl_track( array(
-    'name' => 'splineRequest',
-    'count' => $spline_count
-  ) );
-
-  return array_map( function( $spline ) {
+  $splines = array_map( function( $spline ) {
     return (object) array(
       'id' => $spline[ 'id' ],
       'vertices' => json_decode( $spline[ 'vertices' ] )
     );
   }, $valid_splines );
+
+  return array(
+    $splines,
+    $db_error,
+    array_merge(
+      $expired_tracks,
+      array( array(
+        'name' => 'splineRequest',
+        'count' => count( $valid_splines )
+      ) )
+    )
+  );
 }
 
 function wcorl_grab_splines_from_db() {
