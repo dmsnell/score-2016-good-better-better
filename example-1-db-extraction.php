@@ -7,16 +7,22 @@ function wcorl_grab_splines() {
     return false;
   }
 
-  foreach( $db_splines as $db_spline ) {
-    if ( $db_spline[ 'expiration' ] < time() ) {
-      wcorl_track( array(
-         'name' => 'foundExpiredSpline',
-         'splineId' => $db_spline[ 'id' ],
-         'foundOn' => time()
-      ) );
-      continue;
+  list( $valid_splines, $expired_splines ) = array_partition(
+    $db_splines,
+    function( $spline ) {
+      return $spline[ 'expiration' ] > time();
     }
+  );
 
+  foreach( $expired_splines as $spline ) {
+    wcorl_track( array(
+       'name' => 'foundExpiredSpline',
+       'splineId' => $spline[ 'id' ],
+       'foundOn' => time()
+    ) );
+  }
+
+  foreach( $valid_splines as $db_spline ) {
     $splines[] = (object) array(
       'id' => $db_spline[ 'id' ],
       'vertices' => json_decode( $db_spline[ 'vertices'] )
@@ -46,4 +52,19 @@ function wcorl_grab_splines_from_db() {
   }
 
   return array( $wpdb->get_results(), true );
+}
+
+function array_partition( $array, $predicate ) {
+  $left = array();
+  $right = array();
+
+  foreach ( $array as $item ) {
+    if ( $predicate( $item ) ) {
+      $left[] = $item;
+    } else {
+      $right[] = $item;
+    }
+  }
+
+  return array( $left, $right );
 }
