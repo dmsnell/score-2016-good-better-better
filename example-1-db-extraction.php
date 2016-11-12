@@ -24,19 +24,17 @@ function wcorl_grab_splines() {
     ) );
   }
 
-  foreach( $valid_splines as $db_spline ) {
-    $splines[] = (object) array(
-      'id' => $db_spline[ 'id' ],
-      'vertices' => json_decode( $db_spline[ 'vertices'] )
-    );
-  }
-
   wcorl_track( array(
     'name' => 'splineRequest',
     'count' => $spline_count
   ) );
 
-  return $splines;
+  return array_map( function( $spline ) {
+    return (object) array(
+      'id' => $spline[ 'id' ],
+      'vertices' => json_decode( $spline[ 'vertices' ] )
+    );
+  }, $valid_splines );
 }
 
 function wcorl_grab_splines_from_db() {
