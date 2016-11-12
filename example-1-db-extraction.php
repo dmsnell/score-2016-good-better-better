@@ -17,12 +17,10 @@ function wcorl_grab_splines() {
       continue;
     }
 
-    $spline = new stdClass();
-
-    $spline->id = $db_spline[ 'id' ];
-    $spline->vertices = json_decode( $db_spline[ 'vertices' ] );
-
-    $splines[] = $spline;
+    $splines[] = (object) array(
+      'id' => $db_spline[ 'id' ],
+      'vertices' => json_decode( $db_spline[ 'vertices'] )
+    );
   }
 
   wcorl_track( array(
