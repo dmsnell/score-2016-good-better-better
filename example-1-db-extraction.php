@@ -16,26 +16,14 @@ function grab_splines() {
 }
 
 function grab_splines_raw( $db_splines, $now ) {
-  list( $valid_splines, $expired_splines ) = array_partition(
-    $db_splines,
-    expires_after( $now )
-  );
+  list( $valid, $expired ) = array_partition( $db_splines, expires_after( $now ) );
 
-  $expired_tracks = array_map(
-    expired_db_spline_to_track( $now ),
-    $expired_splines
-  );
+  $expired_tracks = array_map( track_for_expired( $now ), $expired );
 
-  $splines = array_map( 'db_spline_to_spline', $valid_splines );
-  $spline_track = array(
-    'name' => 'splineRequest',
-    'count' => count( $valid_splines )
-  );
+  $splines = array_map( 'db_spline_to_spline', $valid );
+  $spline_track = array( 'name' => 'splineRequest', 'count' => count( $valid ) );
 
-  return array(
-    $splines,
-    array_merge( $expired_tracks, $spline_track )
-  );
+  return array( $splines, array_merge( $expired_tracks, $spline_track ) );
 }
 
 function grab_splines_from_db() {
@@ -61,7 +49,7 @@ function expires_after( $time ) {
   };
 }
 
-function expired_db_spline_to_track( $time ) {
+function track_for_expired( $time ) {
   return function( $spline ) {
     return array(
       'name' => 'foundExpiredSpline',
