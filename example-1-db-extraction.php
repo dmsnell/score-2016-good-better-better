@@ -19,12 +19,6 @@ function wcorl_grab_splines() {
 function wcorl_grab_splines_raw() {
   list( $db_splines, $db_error ) = wcorl_grab_splines_from_db();
 
-  if ( $db_error === false ) {
-    return false;
-  }
-
-  $now = time();
-
   list( $valid_splines, $expired_splines ) = array_partition(
     $db_splines,
     function( $spline ) {
