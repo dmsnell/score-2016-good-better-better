@@ -1,54 +1,44 @@
 <?php
 
-function wcorl_grab_splines() {
-  list( $db_splines, $had_error ) = wcorl_grab_splines_from_db();
+namespace WCORL;
+
+function grab_splines() {
+  list( $db_splines, $had_error ) = grab_splines_from_db();
   if ( $had_error ) {
     return false;
   }
 
-  list( $splines, $tracks ) = wcorl_grab_splines_raw( $db_splines, time() );
+  list( $splines, $tracks ) = grab_splines_raw( $db_splines, time() );
 
   array_walk( $tracks, 'wcorl_track' );
 
   return $splines;
 }
 
-function wcorl_grab_splines_raw( $db_splines, $now ) {
+function grab_splines_raw( $db_splines, $now ) {
   list( $valid_splines, $expired_splines ) = array_partition(
     $db_splines,
-    function( $spline ) {
-      return $spline[ 'expiration' ] > $now;
-    }
+    expires_after( $now )
   );
 
-  $expired_tracks = array_map( function( $spline ) use ( $now ) {
-    return array(
-      'name' => 'foundExpiredSpline',
-      'splineId' => $spline[ 'id' ],
-      'foundOn' => $now
-    );
-  }, $expired_splines );
+  $expired_tracks = array_map(
+    expired_db_spline_to_track( $now ),
+    $expired_splines
+  );
 
-  $splines = array_map( function( $spline ) {
-    return (object) array(
-      'id' => $spline[ 'id' ],
-      'vertices' => json_decode( $spline[ 'vertices' ] )
-    );
-  }, $valid_splines );
+  $splines = array_map( 'db_spline_to_spline', $valid_splines );
+  $spline_track = array(
+    'name' => 'splineRequest',
+    'count' => count( $valid_splines )
+  );
 
   return array(
     $splines,
-    array_merge(
-      $expired_tracks,
-      array( array(
-        'name' => 'splineRequest',
-        'count' => count( $valid_splines )
-      ) )
-    )
+    array_merge( $expired_tracks, $spline_track )
   );
 }
 
-function wcorl_grab_splines_from_db() {
+function grab_splines_from_db() {
   global $wpdb;
 
   $blog_id = get_current_blog_id();
@@ -63,6 +53,29 @@ function wcorl_grab_splines_from_db() {
   }
 
   return array( $wpdb->get_results(), true );
+}
+
+function expires_after( $time ) {
+  return function( $spline ) {
+    return $spline[ 'expiration' ] > $time;
+  };
+}
+
+function expired_db_spline_to_track( $time ) {
+  return function( $spline ) {
+    return array(
+      'name' => 'foundExpiredSpline',
+      'splineId' => $spline[ 'id' ],
+      'foundOn' => $time
+    );
+  };
+}
+
+function db_spline_to_spline( $spline ) {
+    return (object) array(
+      'id' => $spline[ 'id' ],
+      'vertices' => json_decode( $spline[ 'vertices' ] )
+    );
 }
 
 function array_partition( $array, $predicate ) {
