@@ -1,24 +1,19 @@
 <?php
 
 function wcorl_grab_splines() {
-  list(
-      $splines,
-      $had_error,
-      $tracks
-  ) = wcorl_grab_splines_raw();
-
+  list( $db_splines, $had_error ) = wcorl_grab_splines_from_db();
   if ( $had_error ) {
     return false;
   }
+
+  list( $splines, $tracks ) = wcorl_grab_splines_raw( $db_splines, time() );
 
   array_walk( $tracks, 'wcorl_track' );
 
   return $splines;
 }
 
-function wcorl_grab_splines_raw() {
-  list( $db_splines, $db_error ) = wcorl_grab_splines_from_db();
-
+function wcorl_grab_splines_raw( $db_splines, $now ) {
   list( $valid_splines, $expired_splines ) = array_partition(
     $db_splines,
     function( $spline ) {
@@ -43,7 +38,6 @@ function wcorl_grab_splines_raw() {
 
   return array(
     $splines,
-    $db_error,
     array_merge(
       $expired_tracks,
       array( array(
