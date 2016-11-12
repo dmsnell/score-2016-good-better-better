@@ -7,10 +7,12 @@ function wcorl_grab_splines() {
     return false;
   }
 
+  $now = time();
+  
   list( $valid_splines, $expired_splines ) = array_partition(
     $db_splines,
     function( $spline ) {
-      return $spline[ 'expiration' ] > time();
+      return $spline[ 'expiration' ] > $now;
     }
   );
 
@@ -18,7 +20,7 @@ function wcorl_grab_splines() {
     wcorl_track( array(
        'name' => 'foundExpiredSpline',
        'splineId' => $spline[ 'id' ],
-       'foundOn' => time()
+       'foundOn' => $now
     ) );
   }
 
